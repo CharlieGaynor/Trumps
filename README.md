@@ -1,5 +1,11 @@
 # Trumps
 
+!! Please see the Project report for full details of everything this project contains!!
+
+A reinforcement learning project titled:
+
+Comparison of deep learning reinforcement methods when learning rules in a custom environment
+
 Missions of this project:
 
 -- Learn more about reinforcement learning in a novel way, using a custom learning enviroment (trumps game)
