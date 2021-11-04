@@ -4,15 +4,13 @@ import torch
 import copy
 import tensorflow.keras as keras
 
-# We'll start with coding a random AI in. This can be changed to be the own model,
-# updated every x time steps. for now just train vs AI
-# Do we need a seperate AI to predict?
+"""
+    This file is not as well commented, as it is just for the enviroment, and so I figured not as
+    reusable for other people. I can comment it properly on request though.
 
-# I think we could do with a tidier way of passing observations back
+    Note: Please ignore poor commenting form (e.g. #####), this was when I was a pep8 noob.
+"""
 
-
-# can definitely be sped up eventually, priority: use sort based on suit
-# value, trump
 def get_get_winner(pile, trump):
     '''
     Gets winner given a pile. Can be made more efficient
@@ -40,6 +38,9 @@ def get_playable_cards(cards, pile_card=None):
 
 
 def one_hot_playable_cards(cards, rai_card=None):
+    '''
+    One hot encoded list of the playable cards (not used in this project)
+    '''
     if rai_card is None:
         c = get_playable_cards(cards, None)
     else:
@@ -88,11 +89,15 @@ def get_piles(pile, decksize=52):  # hehe
 
 
 def get_trump(trump, length=4):
+    '''Old Function for one hot encoding trumps'''
 
     return to_one_hot(trump, length)
 
 
 def get_obs(cards, pile, trump, decksize=52):
+    '''
+    Returns observation, given the state of the game
+    '''
 
     c = to_one_hot(cards, decksize)
     p = to_one_hot(pile, decksize)
@@ -114,8 +119,11 @@ def get_obs(cards, pile, trump, decksize=52):
 
 
 class SuperTrumps:
+    """Main class for the game. Please ignore poor commenting form (e.g. #####), this was when I was a pep8 noob.
+    """
 
     def __init__(self, num_cards=1, decksize=52):
+
         deck = np.arange(0, decksize, 1)
         np.random.shuffle(deck)
         self.decksize = decksize
@@ -136,9 +144,8 @@ class SuperTrumps:
 
     def step(self, action):
         '''Computes a step in the game
-        action is an integer representing a card, 1-52
-        assume for now it must be in the hand \n
-        returns observation (why), reward, is done'''
+        action is an integer representing a card, 0-51
+        returns observation, reward, is done'''
 
         if self.pile == []:
             if action in self.cards:  # All cards are playable here

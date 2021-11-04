@@ -8,9 +8,15 @@ import pickle
 
 
 class eg2_model(nn.Module):
+    """Epsilon Greedy model with replay"""
 
     def __init__(self, n_obs, n_actions):
-
+        """
+        Args:
+            n_obs (int): Dimensions of the state space (int for this project)
+            n_actions (int): Number of possible actions
+            lr (float, optional): Learning rate for the network. Defaults to 5e-4.
+        """  
         super().__init__()
 
         self.net = nn.Sequential(
@@ -24,17 +30,30 @@ class eg2_model(nn.Module):
         self.replay_memory = deque([], 500)
 
     def forward(self, state):
+        """Predictions values given state
+
+        Args:
+            state (np.array): Observation for given step
+
+        Returns:
+            q_values
+        """
         q_vals = self.net(state)
         return q_vals
 
     def get_action(self, state, epsilon=0):
-        """
-        sample actions with epsilon-greedy policy
-        recap: with p = epsilon pick random action, else pick action with highest Q(s,a)
+        """ Sample actions with epsilon-greedy policy
+
+        Args:
+            state (np.array): Observation for a given step
+            epsilon (float, optional): Exploration probability. Defaults to 0.
+
+        Returns:
+            int: Action to take (card to play)
         """
         state = torch.tensor(
-            state, dtype=torch.float32)  # None adds a new axis, why do we need it ?
-        q_values = self.forward(state)  # .detach() #this may be wrong
+            state, dtype=torch.float32)  
+        q_values = self.forward(state) 
 
         ran_num = torch.rand(1)
         if ran_num < epsilon:
@@ -56,6 +75,17 @@ class eg2_runner(object):
             is_cuda=False,
             epsilon=1,
             min_epsilon=0.1):
+        """
+        Args:
+            net (eg_model class): eg_model class, describing a neural network
+            env (Trumps env): Custom enviroment made (swap for gym envs for example)
+            num_updates (int, optional): Number of games to train for. Defaults to 100000.
+            num_obs (int, optional): State space. Defaults to 104.
+            lr (float, optional): Learning rate. Defaults to 5e-4.
+            is_cuda (bool, optional): Whether to use graphics card. Please keep to False
+            epsilon (int, optional): Initial exploration rate. Defaults to 1.
+            min_epsilon (float, optional): Min exploration rate. Defaults to 0.1.
+        """
         super().__init__()
 
         # constants
@@ -73,7 +103,7 @@ class eg2_runner(object):
         self.ep_multiplier = self.min_epsilon**(1 / num_updates)
         self.scores = []
 
-        # loss scaling coefficients
+        # Ignore for now
         self.is_cuda = torch.cuda.is_available() and is_cuda
 
         """Environment"""
@@ -84,6 +114,8 @@ class eg2_runner(object):
         self.opt = torch.optim.Adam(self.net.parameters(), lr=self.lr)
 
     def train(self):
+        """Trains for self.num_updates number of games
+        """        
 
         for chunk in range(1, self.num_updates // 250 + 1):
 
@@ -108,7 +140,12 @@ class eg2_runner(object):
         return
 
     def generate_sessions(self, sessions=500):
-        '''Generate sessions ready to train'''
+        '''Generate sessions ready to train
+        
+        Args:
+            sessions (int, optional): Number of sessions to generate
+            
+            '''
 
         for _ in range(1, sessions):
             s, pc = self.env.reset()
@@ -128,6 +165,8 @@ class eg2_runner(object):
         return
 
     def evaluate(self):
+        """Evaluates model performance with epsilon = 0 for 500 games
+        """ 
         for _ in range(500):
             total_reward = 0
             s, pc = self.env.reset()
@@ -148,20 +187,31 @@ class eg2_runner(object):
             rewards,
             next_states,
             is_done,
-            gamma=0.99,
-            check_shapes=False):
-        """ Compute td loss"""
+            gamma=0.99):
+        """Compute loss function according to bellman equation
+
+        Args:
+            states (np.array): History of states from the last game
+            actions (np.array): History of actions from the last game
+            rewards (np.array): History of rewards from the last game
+            next_states (np.array): History of states shifted by 1, from the last game
+            is_done (bool): History of whether the game was finished, from the last game
+            gamma (float, optional): discount rate. Defaults to 0.99.
+
+        Returns:
+            [torch.tensor] : Loss function ready to back propagate
+        """ 
 
         states = torch.tensor(
-            states, dtype=torch.float32)    # shape: [batch_size, state_size]
+            states, dtype=torch.float32)  
         actions = torch.tensor(
-            actions, dtype=torch.long)   # shape: [batch_size]
+            actions, dtype=torch.long)   
         rewards = torch.tensor(
-            rewards, dtype=torch.float32)  # shape: [batch_size]
+            rewards, dtype=torch.float32)  
         next_states = torch.tensor(next_states, dtype=torch.float32)
 
         is_done = torch.tensor(
-            is_done, dtype=torch.uint8)  # shape: [batch_size]
+            is_done, dtype=torch.uint8)  
 
         predicted_qvalues = self.net.forward(states)
 
@@ -171,7 +221,7 @@ class eg2_runner(object):
         predicted_next_qvalues = self.net.forward(next_states)
 
         max_next_state_value = torch.max(predicted_next_qvalues, dim=1)[
-            0]  # .to(self.device)
+            0] 
 
         target_qvalues_for_actions = rewards + \
             torch.mul(gamma, max_next_state_value)
@@ -179,7 +229,7 @@ class eg2_runner(object):
         # at the last state we shall use simplified formula: Q(s,a) = r(s,a)
         # since s' doesn't exist
         target_qvalues_for_actions = torch.where(
-            is_done, rewards, target_qvalues_for_actions)
+            is_done==1, rewards, target_qvalues_for_actions)
 
         # mean squared error loss to minimize
         loss = torch.mean((predicted_qvalues_for_actions -
@@ -188,6 +238,7 @@ class eg2_runner(object):
         return loss
 
     def save(self):
-        with open('models/epsilon_greedy_2_model', 'wb') as f:
+        """Saves model"""
+        with open('Scripts/models/epsilon_greedy_2_model', 'wb') as f:
             pickle.dump(self, f)
         return

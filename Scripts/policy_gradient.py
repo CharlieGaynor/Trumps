@@ -8,13 +8,14 @@ import pickle
 
 
 class PolicyGradient(nn.Module):
+    """Implementation of Policy Gradient (REINFORCE)"""
     def __init__(self, n_obs, n_actions, lr=1e-3):
         """
-        Implementation of the Advantage Actor-Critic (A2C) network
-        :param n_stack: number of frames stacked
-        :param num_actions: size of the action space, pass env.action_space.n
-        :param in_size: input size of the LSTMCell of the FeatureEncoderNet
-        """
+        Args:
+            n_obs (int): Dimensions of the state space (int for this project)
+            n_actions (int): Number of possible actions
+            lr (float, optional): Learning rate for the network. Defaults to 1e-3.
+        """    
         super().__init__()
 
         # constants
@@ -30,11 +31,14 @@ class PolicyGradient(nn.Module):
         )
 
     def forward(self, state):
-        """
-        feature: current encoded state
-        :param state: current state
-        :return:
-        """
+        """Predictions values given state
+
+        Args:
+            state (np.array): Observation for given step
+
+        Returns:
+            q_values
+        """  
         feature = torch.tensor(state, dtype=torch.float32)
 
         # calculate policy and value function
@@ -43,18 +47,20 @@ class PolicyGradient(nn.Module):
         return policy
 
     def get_action(self, state, pcs):
-        """
-        Method for selecting the next action
-        :param state: current state
-        :return: tuple of (action, log_prob_a_t, value)
+        """ Sample actions with epsilon-greedy policy
+
+        Args:
+            state (np.array): Observation for a given step
+            pcs (array): Ignore, stands for playable cards but not used
+
+        Returns:
+            int: Action to take (card to play)
         """
 
-        """Evaluate the A2C"""
         policy = self.forward(state)  # use A3C to get policy and value
 
-        """Calculate action"""
         # 1. convert policy outputs into probabilities
-        # 2. sample the categorical  distribution represented by these probabilities
+        # 2. sample the categorical distribution represented by these probabilities
         #policy = policy * torch.tensor(pc)
         action_prob = F.softmax(policy, dim=-1)
         cat = Categorical(action_prob)
@@ -66,6 +72,14 @@ class PolicyGradient(nn.Module):
 class policy_runner(object):
 
     def __init__(self, net, env, num_obs=52, num_updates=100000, lr=5e-4):
+        """
+        Args:
+            net (eg_model class): eg_model class, describing a neural network
+            env (Trumps env): Custom enviroment made (swap for gym envs for example)
+            num_updates (int, optional): Number of games to train for. Defaults to 100000.
+            num_obs (int, optional): State space. Defaults to 104.
+            lr (float, optional): Learning rate. Defaults to 5e-4.
+        """
         super().__init__()
 
         # constants
@@ -87,18 +101,17 @@ class policy_runner(object):
         self.opt = torch.optim.Adam(self.net.parameters(), self.lr)
 
     def train(self):
-
+        """
+        Trains model for self.num_updates games
+        """
         for episode in range(1, self.num_updates + 1):
 
             entropy = self.episode_rollout()
 
             self.opt.zero_grad()
 
-            """Assemble loss"""
             loss = self.policy_loss(entropy)
-            loss.backward()  # retain_graph=False)
-
-            #nn.utils.clip_grad_norm_(self.net.parameters(), self.max_grad_norm)
+            loss.backward()
 
             self.opt.step()
 
@@ -112,6 +125,9 @@ class policy_runner(object):
             self.sum_rewards.append(self.rewards.sum())
 
     def evaluate(self):
+        """
+        Evaluates model performance with epsilon = 0 for 500 games
+        """ 
         for _ in range(500):
             total_reward = 0
             s, pc = self.env.reset()
@@ -126,6 +142,9 @@ class policy_runner(object):
         return
 
     def episode_rollout(self):
+        """
+        Plays a game and stores all needed features
+        """
         episode_entropy = 0
         self.rewards = torch.zeros(5)
         self.values = torch.zeros(5)
@@ -157,6 +176,15 @@ class policy_runner(object):
         return episode_entropy
 
     def policy_loss(self, entropy):
+        """
+        Calculates policy loss
+
+        Args:
+            entropy (np.array): represents entropic loss
+
+        Returns:
+            [torch.tensor] : Loss function ready to back propagate
+        """
         rewards = self._discount_rewards()
         policy_loss = torch.sum((-self.log_probs * rewards), dim=-1)
 
@@ -166,13 +194,11 @@ class policy_runner(object):
 
     def _discount_rewards(self, discount=0.99):
         """
-        Computes the discounted reward while respecting - if the episode
-        is not done - the estimate of the final reward from that state (i.e.
-        the value function passed as the argument `final_value`)
-        :param final_value: estimate of the final reward by the critic
-        :param discount: discount factor
-        :return:
-        """
+        Computes the discounted reward 
+
+        Returns:
+            np.array: array of discounted rewards at each timestep
+        """        
         r_discounted = torch.zeros(5)
 
         """Calculate discounted rewards"""
@@ -188,15 +214,15 @@ class policy_runner(object):
     def insert(self, step, reward, obs, action, log_prob, done):
         """
         Inserts new data into the log for each environment at index step
-        :param step: index of the step
-        :param reward: numpy array of the rewards
-        :param obs: observation as a numpy array
-        :param action: tensor of the actions
-        :param log_prob: tensor of the log probabilities
-        :param value: tensor of the values
-        :param dones: numpy array of the dones (boolean)
-        :return:
-        """
+
+        Args:
+            step (int)): index of the step
+            reward (int): reward
+            obs (np.array): observation
+            action (int): Action taken
+            log_prob ([type]): tensor of the log probabilities
+            done (int): flag for game is done
+        """ 
         self.rewards[step].copy_(torch.from_numpy(np.array(reward)))
         self.states[step + 1].copy_(torch.from_numpy(obs))
         self.actions[step].copy_(torch.tensor(action))
@@ -204,6 +230,7 @@ class policy_runner(object):
         self.dones[step].copy_(torch.from_numpy(np.array(done)))
 
     def save(self):
-        with open('models/policy_gradient_model', 'wb') as f:
+        """ Saves model"""
+        with open('Scripts/models/policy_gradient_model', 'wb') as f:
             pickle.dump(self, f)
         return

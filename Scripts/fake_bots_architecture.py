@@ -5,15 +5,14 @@ import copy
 from icecream import ic
 import tensorflow.keras as keras
 
-# We'll start with coding a random AI in. This can be changed to be the own model,
-# updated every x time steps. for now just train vs AI
-# Do we need a seperate AI to predict?
+"""
+    This file is not as well commented, as it is just for the enviroment, and so I figured not as
+    reusable for other people. I can comment it properly on request though.
 
-# I think we could do with a tidier way of passing observations back
+    Note: Please ignore poor commenting form (e.g. #####), this was when I was a pep8 noob.
+"""
 
 
-# can definitely be sped up eventually, priority: use sort based on suit
-# value, trump
 def get_get_winner(pile, trump):
     '''
     Gets winner given a pile. Can be made more efficient

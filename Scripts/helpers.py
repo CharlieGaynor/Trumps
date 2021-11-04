@@ -4,16 +4,22 @@ import matplotlib.pyplot as plt
 
 
 def ma(lst):
+    '''Moving average with convolution length 1000'''
     l = 1000
     return np.convolve(lst, np.ones(l), 'valid') / l
 
 
 def ma2(lst):
+    '''Moving average with convolution length 250'''
     l = 250
     return np.convolve(lst, np.ones(l), 'valid') / l
 
 
 def test_rules_1c(model):
+    '''Tests the rules for the 1 card game, epsilon greedy methods
+    
+    DEPRECATED
+    '''
     for card in range(52):
         s = [0 for i in range(52)]
         s[card] = 1
@@ -25,23 +31,40 @@ def test_rules_1c(model):
 
 
 def train_model(model, is_epsilon=False, save=False):
-
+    '''Trains the model and plots the results
+    
+    Args:
+        model (model class): model to tran
+        is_epsilon (bool): is the model an epsilon greedy class?
+        save (bool): Flag for saving the model down after training
+    '''
     if is_epsilon:
         model.train()  # training
         a = ma(model.sum_rewards)  # smoothing curve
         b = ma2(model.scores)
 
         # plotting
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-        ax1.plot(range(len(a)), a)
-        ax1.set_title('Training Reward')
-        ax1.set_xlabel('Games played')
-        ax1.set_ylabel('Reward')
-        ax2.plot(range(len(b)), b, color='orange')  # just one graph at the end
-        ax2.set_title('Evaluation reward, ε = 0')
-        ax2.set_xlabel('Evaluations')
-        ax2.set_ylabel('Reward')
-        fig.tight_layout()
+        fig, ax1 = plt.subplots(figsize=(8, 5))
+        ax1.plot(range(len(a)), a, linewidth=6)
+        ax1.set_title('Training Reward', fontsize=20)
+        ax1.set_xlabel('Games played', fontsize=16)
+        ax1.set_ylabel('Reward', fontsize=16)
+        for tick in ax1.xaxis.get_major_ticks():
+            tick.label.set_fontsize(16)
+        for tick in ax1.yaxis.get_major_ticks():
+            tick.label.set_fontsize(15)
+        plt.show()
+        plt.clf()
+
+        fig, ax1 = plt.subplots(figsize=(8, 5))
+        ax1.plot(range(len(b)), b, color='orange',linewidth=6)  # just one graph at the end
+        ax1.set_title('Evaluation reward, ε = 0', fontsize=20)
+        ax1.set_xlabel('Evaluations', fontsize=16)
+        ax1.set_ylabel('Reward', fontsize=16)
+        for tick in ax1.xaxis.get_major_ticks():
+            tick.label.set_fontsize(16)
+        for tick in ax1.yaxis.get_major_ticks():
+            tick.label.set_fontsize(15)
         plt.show()
 
     else:
@@ -49,11 +72,15 @@ def train_model(model, is_epsilon=False, save=False):
         model.evaluate()  # testing with epsilon = 0
         a = ma(model.sum_rewards)  # smoothing curve
         # plotting
-        fig, ax1 = plt.subplots(figsize=(12, 5))
-        ax1.plot(range(len(a)), a)
-        ax1.set_title('Training Reward')
-        ax1.set_xlabel('Games played')
-        ax1.set_ylabel('Reward')
+        fig, ax1 = plt.subplots(figsize=(8, 5))
+        ax1.plot(range(len(a)), a, linewidth=6)
+        ax1.set_title('Training Reward', fontsize=20)
+        ax1.set_xlabel('Games played', fontsize=16)
+        ax1.set_ylabel('Reward', fontsize=16)
+        for tick in ax1.xaxis.get_major_ticks():
+            tick.label.set_fontsize(16)
+        for tick in ax1.yaxis.get_major_ticks():
+            tick.label.set_fontsize(15)
         plt.show()
 
     print('Is the model still making mistakes?')
@@ -74,16 +101,27 @@ def plot_both_graphs(sum_rewards, scores):
     a = ma(sum_rewards)
     b = ma2(scores)
     # Now Plotting
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    ax1.plot(range(len(a)), a)
-    ax1.set_title('Training Reward')
-    ax1.set_xlabel('Games played')
-    ax1.set_ylabel('Reward')
-    ax2.plot(range(len(b)), b, color='orange')  # just one graph at the end
-    ax2.set_title('Evaluation reward, ε = 0')
-    ax2.set_xlabel('Evaluations')
-    ax2.set_ylabel('Reward')
-    fig.tight_layout()
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.plot(range(len(a)), a, linewidth=6)
+    ax1.set_title('Training Reward', fontsize=20)
+    ax1.set_xlabel('Games played', fontsize=16)
+    ax1.set_ylabel('Reward', fontsize=16)
+    for tick in ax1.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax1.yaxis.get_major_ticks():
+        tick.label.set_fontsize(15)
+    plt.show()
+    plt.clf()
+
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.plot(range(len(b)), b, color='orange',linewidth=6)  # just one graph at the end
+    ax1.set_title('Evaluation reward, ε = 0', fontsize=20)
+    ax1.set_xlabel('Evaluations', fontsize=16)
+    ax1.set_ylabel('Reward', fontsize=16)
+    for tick in ax1.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax1.yaxis.get_major_ticks():
+        tick.label.set_fontsize(15)
     plt.show()
 
 
@@ -91,9 +129,13 @@ def plot_training_graph(sum_rewards):
     '''Helper to plot training graph'''
     a = ma(sum_rewards)  # smoothing curve
     # plotting
-    fig, ax1 = plt.subplots(figsize=(12, 5))
-    ax1.plot(range(len(a)), a)
-    ax1.set_title('Training Reward')
-    ax1.set_xlabel('Games played')
-    ax1.set_ylabel('Reward')
+    fig, ax1 = plt.subplots(figsize=(8, 5))
+    ax1.plot(range(len(a)), a, linewidth=6)
+    ax1.set_title('Training Reward', fontsize=20)
+    ax1.set_xlabel('Games played', fontsize=16)
+    ax1.set_ylabel('Reward', fontsize=16)
+    for tick in ax1.xaxis.get_major_ticks():
+        tick.label.set_fontsize(16)
+    for tick in ax1.yaxis.get_major_ticks():
+        tick.label.set_fontsize(15)
     plt.show()

@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 21 16:41:26 2021
-
-@author: Charl
-"""
 import numpy as np
 
+"""
+    List of players invented by me, to try and beat a random opponent (I did).    
+"""
 
 def random_player(playable_cards, pile, trump):
     '''input: playable cards, cards on the pile and the trump
-    returns an action'''
+    returns a random action'''
     return np.random.choice(playable_cards)
 
 
@@ -28,6 +26,7 @@ def min_player(playable_cards, pile, trump):
 
 
 def great_player(playable_cards, pile, trump):
+    """Great player with a little complicated behaviour"""
     cards = playable_cards
     if pile is None:
         return max_player(playable_cards, pile, trump)
@@ -53,10 +52,20 @@ def great_player(playable_cards, pile, trump):
 
 
 def moving_average(x, w=500):
+    """Moving average of length w=500 by default."""
     return np.convolve(x, np.ones(w), 'valid') / w
 
 
 def simulate(env, player_func=random_player):
+    """Simulates games of hardcoded bot vs built-in random AI
+
+    Args:
+        env (SuperTrumps class): playground, essentially
+        player_func (Function): Strategy for the player. Defaults to random_player.
+
+    Returns:
+        list: all the rewards the bot recieved
+    """
     total_rewards = []
     for i in range(5000):
         s, pc = env.reset()  # state is cards,pile,trump

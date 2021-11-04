@@ -7,23 +7,14 @@ from torch.distributions import Categorical
 import pickle
 
 class A2Cnet(nn.Module):
+    """Implementation of the Advantage Actor-Critic (A2C) network"""
     def __init__(self, n_obs, n_actions,lr=1e-3):
         """
-
-        Parameters
-        ----------
-        n_obs : TYPE
-            DESCRIPTION.
-        n_actions : TYPE
-            DESCRIPTION.
-        lr : TYPE, optional
-            DESCRIPTION. The default is 1e-3.
-
-        Returns
-        -------
-        None.
-
-        """
+        Args:
+            n_obs (int): Dimensions of the state space (int for this project)
+            n_actions (int): Number of possible actions
+            lr (float, optional): Learning rate for the network. Defaults to 1e-3.
+        """    
         
         
         super().__init__()
@@ -35,22 +26,25 @@ class A2Cnet(nn.Module):
         # networks
 
         self.actor = nn.Sequential(
-            nn.Linear(self.n_obs, self.n_obs *10),  # estimates what to do
+            nn.Linear(self.n_obs, self.n_obs *10),  # Gives values for each action
             nn.ELU(),
             nn.Linear(self.n_obs*10,self.n_actions)
         )
         self.critic = nn.Sequential(
-            nn.Linear(self.n_obs, self.n_obs*10),  # estimates what to do
+            nn.Linear(self.n_obs, self.n_obs*10), 
             nn.ELU(),
             nn.Linear(self.n_obs*10,1)
         )  # estimates how good the value function (how good the current state is)
 
     def forward(self, state):
-        """
-        feature: current encoded state
-        :param state: current state
-        :return:
-        """
+        """Predictions values given state
+
+        Args:
+            state (np.array): Observation for given step
+
+        Returns:
+            q_values
+        """  
         feature = torch.tensor(state,dtype=torch.float32)
 
         # calculate policy and value function
@@ -60,10 +54,14 @@ class A2Cnet(nn.Module):
         return policy, torch.squeeze(value)
 
     def get_action(self, state,pcs):
-        """
-        Method for selecting the next action
-        :param state: current state
-        :return: tuple of (action, log_prob_a_t, value)
+        """ Sample actions with epsilon-greedy policy
+
+        Args:
+            state (np.array): Observation for a given step
+            pcs (array): Ignore, stands for playable cards but not used
+
+        Returns:
+            int: Action to take (card to play)
         """
 
         """Evaluate the A2C"""
@@ -83,6 +81,15 @@ class A2Cnet(nn.Module):
 class ac_runner(object):
 
     def __init__(self, net, env,num_updates=100000,num_obs =104 ,lr=5e-4,is_cuda=False):
+        """
+        Args:
+            net (eg_model class): eg_model class, describing a neural network
+            env (Trumps env): Custom enviroment made (swap for gym envs for example)
+            num_updates (int, optional): Number of games to train for. Defaults to 100000.
+            num_obs (int, optional): State space. Defaults to 104.
+            lr (float, optional): Learning rate. Defaults to 5e-4.
+            is_cuda (keep false plz)
+        """
         super().__init__()
 
         # constants
@@ -98,7 +105,7 @@ class ac_runner(object):
         self.scores = []
 
 
-        # loss scaling coefficients
+        # Whether to use a GPU, ignore for now
         self.is_cuda = torch.cuda.is_available() and is_cuda
 
 
@@ -113,6 +120,9 @@ class ac_runner(object):
             self.net = self.net.cuda()
 
     def train(self):
+        """
+        Trains model for self.num_updates games
+        """
 
         """Environment reset"""
         self.state,self.pcs = self.env.reset()
@@ -132,6 +142,7 @@ class ac_runner(object):
 
             self.optimizer.step()
 
+            # Printing stuff
             if (episode) % 20000 == 0:
                 print(f"{episode}")
             if (episode) % 5000 == 0:
@@ -139,9 +150,13 @@ class ac_runner(object):
             if (episode) % 400 == 0:
                 print('.',end='')
             
+            # Storing for later
             self.sum_rewards.append(self.rewards.sum())
 
     def episode_rollout(self):
+        """
+        Plays a game and stores all needed features
+        """
         episode_entropy = 0
         self.rewards = torch.zeros(5)
         self.values = torch.zeros(5)
@@ -156,10 +171,10 @@ class ac_runner(object):
             """Interact with the environments """
             # call A2C
             a_t, log_p_a_t, entropy, value = self.net.get_action(self.state,self.pcs)
-            # accumulate episode entropy
+            # accumulate episode entropy, no longer needed but scared to break stuff!
             episode_entropy += entropy
 
-            # interact
+            # Take a step
             new_s, reward, done, pcs = self.env.step(int(a_t.cpu()))
 
             self.insert(step,reward,new_s,a_t,log_p_a_t,value,done)
@@ -175,13 +190,16 @@ class ac_runner(object):
         return final_value, episode_entropy
 
     def evaluate(self):
+        """
+        Evaluates model performance with epsilon = 0 for 500 games
+        """ 
         for blank in range(500):
             total_reward = 0
             s,pc = self.env.reset()
             for __ in range(100):
                 a_t, _,_,_ = self.net.get_action(s,pc)
 
-                # interact
+                # Take a step
                 new_s, reward, done, pc = self.env.step(int(a_t.cpu()))
                 total_reward += reward
                 s = new_s
@@ -192,8 +210,15 @@ class ac_runner(object):
         return
     
     def a2c_loss(self, final_value, entropy):
-        # calculate advantage
-        # i.e. how good was the estimate of the value of the current state
+        """
+        Calculates a2c loss
+
+        Args:
+            entropy (np.array): represents entropic loss
+
+        Returns:
+            [torch.tensor] : Loss function ready to back propagate
+        """
         rewards = self._discount_rewards(final_value)
         advantage = rewards - self.values
         policy_loss = (-self.log_probs * advantage.detach()).sum()
@@ -207,12 +232,10 @@ class ac_runner(object):
 
     def _discount_rewards(self, final_value, discount=0.99):
         """
-        Computes the discounted reward while respecting - if the episode
-        is not done - the estimate of the final reward from that state (i.e.
-        the value function passed as the argument `final_value`)
-        :param final_value: estimate of the final reward by the critic
-        :param discount: discount factor
-        :return:
+        Computes the discounted reward 
+
+        Returns:
+            np.array: array of discounted rewards at each timestep
         """
         r_discounted = torch.zeros(5)
 
@@ -229,15 +252,15 @@ class ac_runner(object):
     def insert(self, step, reward, obs, action, log_prob, value, done):
         """
         Inserts new data into the log for each environment at index step
-        :param step: index of the step
-        :param reward: numpy array of the rewards
-        :param obs: observation as a numpy array
-        :param action: tensor of the actions
-        :param log_prob: tensor of the log probabilities
-        :param value: tensor of the values
-        :param dones: numpy array of the dones (boolean)
-        :return:
-        """
+
+        Args:
+            step (int)): index of the step
+            reward (int): reward
+            obs (np.array): observation
+            action (int): Action taken
+            log_prob ([type]): tensor of the log probabilities
+            done (int): flag for game is done
+        """ 
         self.rewards[step].copy_(torch.from_numpy(np.array(reward)))
         self.states[step + 1].copy_(torch.from_numpy(obs))
         self.actions[step].copy_(action)
@@ -246,7 +269,8 @@ class ac_runner(object):
         self.dones[step].copy_(torch.from_numpy(np.array(done)))
 
     def save(self):
-        with open('models/actor_critic_model','wb') as f:
+        """ Saves model"""
+        with open('Scripts/models/actor_critic_model','wb') as f:
             pickle.dump(self,f)
         return
         
