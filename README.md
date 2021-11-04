@@ -1,6 +1,6 @@
 # Trumps
 
-!! Please see the Project report for full details of everything this project contains!!
+!! Please see the Project report for full details of everything this project contains !!
 
 A reinforcement learning project titled:
 
