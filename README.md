@@ -1,7 +1,8 @@
 # Trumps
 
+# See PyRL for much better reinforcement learning code. This stuff is legacy, and maybe not the best...
 # Please see the project report for all the useful information
-# Also note the code is... not the best in hindsight. I've improved massively since this repo was made, but will leave it up anyway
+
 
 A reinforcement learning project titled:
 
