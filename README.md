@@ -1,6 +1,7 @@
 # Trumps
 
-!! Please see the Project report for full details of everything this project contains !!
+# Please see the project report for all the useful information
+# Also note the code is... not the best in hindsight. I've improved massively since this repo was made, but will leave it up anyway
 
 A reinforcement learning project titled:
 
