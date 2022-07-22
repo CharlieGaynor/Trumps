@@ -10,9 +10,9 @@ Comparison of deep learning reinforcement methods when learning rules in a custo
 Missions of this project:
 
 - Learn more about reinforcement learning in a novel way, using a custom learning environment (trumps game)
-- 
+
 - Test the limitations of deep reinforcement algorithms when using simple architecture
-- 
+
 - Provide well documented, pep 8 obeying, example implementations of said algorithms for others to potentially learn from
 
 All 3 goals have been met, and it was a sucessful project (with, of course, unlimited scope to keep improving).
